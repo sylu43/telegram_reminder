@@ -37,10 +37,14 @@ groups = []
 
 task_num = 0
 MINUTES_PER_DAY = 24 * 60
-HELP_MESSAGE = '''
+HELP_MESSAGE_REMIND = '''
 command: /remind "$message" $frequency
 message: message to remind
 frequency: how many time bot should work per day
+'''
+HELP_MESSAGE_DELETE = '''
+command: /delete $index
+index: index of reminder to delete
 '''
 
 class Group:
@@ -94,8 +98,6 @@ class Task:
         bot.send_message(self.group_id, self.message)
         self.lock.release()
 
-#def set_reminder(task):
-
 def set_daily_reminders(context):
     for task in tasks:
         task.set_today_reminder()
@@ -112,14 +114,14 @@ def start(update: Update, context: CallbackContext) -> None:
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /help is issued."""
-    update.message.reply_text(HELP_MESSAGE)
+    update.message.reply_text(HELP_MESSAGE_REMIND + HELP_MESSAGE_DELETE)
 
 def set_reminder_command(update: Update, context: CallbackContext) -> None:
     """Set reminders."""
     text = update.message.text
     match = re.search("^/remind \"(.+)\" (\d+)$", text)
     if not match:
-        update.message.reply_text(HELP_MESSAGE)
+        update.message.reply_text(HELP_MESSAGE_REMIND)
     else:
         message = match.group(1)
         frequency = match.group(2)
@@ -146,6 +148,23 @@ def list_command(update: Update, context: CallbackContext) -> None:
             return
     bot.send_message(group_id, "No reminder!")
 
+def delete_command(update: Update, context: CallbackContext) -> None:
+    """Delete reminders."""
+    text = update.message.text
+    match = re.search("^/delete (\d+)$", text)
+    if not match:
+        update.message.reply_text(HELP_MESSAGE_DELETE)
+        return
+    group_id = update.message.chat.id
+    index = int(match.group(1))
+    for group in groups:
+        if group_id == group.group_id:
+            if index > len(group.tasks):
+                update.message.reply_text("index out of range")
+                return
+            del group.tasks[index - 1]
+            update.message.reply_text("task deleted")
+
 
 def main() -> None:
     """Start the bot."""
@@ -166,6 +185,7 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler("help", help_command))
     dispatcher.add_handler(CommandHandler("remind", set_reminder_command))
     dispatcher.add_handler(CommandHandler("list", list_command))
+    dispatcher.add_handler(CommandHandler("delete", delete_command))
 
     # Start the Bot
     updater.start_polling()
