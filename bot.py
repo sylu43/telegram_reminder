@@ -77,7 +77,6 @@ class Task:
             timing = randrange(MINUTES_PER_DAY)
             if(timing + current_minute < MINUTES_PER_DAY):
                 job_queue.run_once(self.notify, timing * 60)
-                print("{}:{}".format(int((timing+current_minute)/60), (timing+current_minute)%60), file=sys.stderr)
                 timings += 1
         self.frequency_today = timings
         self.frequency_executed = 0
@@ -87,7 +86,6 @@ class Task:
         self.lock.acquire()
         for i in range(self.frequency):
             timing = randrange(MINUTES_PER_DAY)
-            print("{}:{}".format(int((timing)/60), (timing)%60), file=sys.stderr)
             job_queue.run_once(self.notify, timing * 60)
         self.frequency_today = self.frequency
         self.frequency_executed = 0
@@ -119,12 +117,12 @@ def help_command(update: Update, context: CallbackContext) -> None:
 def set_reminder_command(update: Update, context: CallbackContext) -> None:
     """Set reminders."""
     text = update.message.text
-    match = re.search("^/remind \"(.+)\" (\d+)$", text)
+    match = re.search("^/remind \"(?P<message>.+)\" (?P<frequency>\d+)$", text)
     if not match:
         update.message.reply_text(HELP_MESSAGE_REMIND)
     else:
-        message = match.group(1)
-        frequency = match.group(2)
+        message = match.group('message')
+        frequency = match.group('frequency')
         group_id = update.message.chat.id
         for group in groups:
             if group_id == group.group_id:
@@ -134,8 +132,6 @@ def set_reminder_command(update: Update, context: CallbackContext) -> None:
         groups.append(Group(message, frequency, group_id))
         bot.send_message(group_id, "Task set!")
 
-    '''
-    '''
 def list_command(update: Update, context: CallbackContext) -> None:
     """List reminders."""
     group_id = update.message.chat.id
@@ -151,12 +147,12 @@ def list_command(update: Update, context: CallbackContext) -> None:
 def delete_command(update: Update, context: CallbackContext) -> None:
     """Delete reminders."""
     text = update.message.text
-    match = re.search("^/delete (\d+)$", text)
+    match = re.search("^/delete (?P<index>\d+)$", text)
     if not match:
         update.message.reply_text(HELP_MESSAGE_DELETE)
         return
     group_id = update.message.chat.id
-    index = int(match.group(1))
+    index = int(match.group('index'))
     for group in groups:
         if group_id == group.group_id:
             if index > len(group.tasks):
