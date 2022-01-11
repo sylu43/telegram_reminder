@@ -34,8 +34,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 groups = []
+cur_group = 0
 
-task_num = 0
+MAX_TASK = 100
+MAX_NOTIFY = 100
 MINUTES_PER_DAY = 24 * 60
 HELP_MESSAGE_REMIND = '''
 command: /remind "MESSAGE" FREQUENCY [i/e TIME~TIME[,TIME~TIME]*]
@@ -54,17 +56,23 @@ class Group:
     def __init__(self, message, frequency, group_id, filt, periods):
         self.tasks = []
         self.group_id = group_id
-        self.tasks.append(Task(message, frequency, group_id, filt, periods))
+        self.tasks.append(Task(0, message, frequency, group_id, filt, periods))
 
     def add_task(self, message, frequency, group_id, filt, periods):
-        self.tasks.append(Task(message, frequency, group_id, filt, periods))
+        for i, slot in enumerate(self.tasks):
+            if slot == None:
+                self.tasks[i] = Task(i, message, frequency, group_id, filt, periods)
+                return True
+        if len(self.tasks) == MAX_TASK:
+            return False
+        self.tasks.append(Task(i + 1, message, frequency, group_id, filt, periods))
+        return True
 
 class Task:
 
-    def __init__(self, message, frequency, group_id, filt, periods):
-        global task_num
-        task_num += 1
+    def __init__(self, index, message, frequency, group_id, filt, periods):
         self.lock = Lock()
+        self.index = index
         self.message = message
         self.frequency = frequency
         self.group_id = group_id
@@ -108,9 +116,12 @@ def set_daily_reminders(context):
 def add_to_group(message, frequency, group_id, filt, periods) -> None:
     for group in groups:
         if group_id == group.group_id:
-            group.add_task(message, frequency, group_id, filt, periods)
-            bot.send_message(group_id, "Task set!")
-            return
+            if group.add_task(message, frequency, group_id, filt, periods):
+                bot.send_message(group_id, "Task set!")
+                return
+            else:
+                bot.send_message(group_id, "Too many tasks!")
+                return
     groups.append(Group(message, frequency, group_id, filt, periods))
     bot.send_message(group_id, "Task set!")
 
@@ -172,7 +183,7 @@ def delete_command(update: Update, context: CallbackContext) -> None:
             if index > len(group.tasks):
                 update.message.reply_text("index out of range")
                 return
-            del group.tasks[index - 1]
+            group.tasks[index - 1] = None
             update.message.reply_text("task deleted")
 
 
