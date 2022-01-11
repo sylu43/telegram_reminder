@@ -38,9 +38,11 @@ groups = []
 task_num = 0
 MINUTES_PER_DAY = 24 * 60
 HELP_MESSAGE_REMIND = '''
-command: /remind "MESSAGE" FREQUENCY
+command: /remind "MESSAGE" FREQUENCY [i/e TIME~TIME[,TIME~TIME]*]
 MESSAGE: message to remind
 FREQUENCY: how many time bot should work per day
+i/e: include or exclude certain periods
+TIME: HH:MM or just HH
 '''
 HELP_MESSAGE_DELETE = '''
 command: /delete INDEX
@@ -49,23 +51,25 @@ INDEX: index of reminder to delete
 
 class Group:
 
-    def __init__(self, message, frequency, group_id):
+    def __init__(self, message, frequency, group_id, filt, periods):
         self.tasks = []
         self.group_id = group_id
-        self.tasks.append(Task(message, frequency, group_id))
+        self.tasks.append(Task(message, frequency, group_id, filt, periods))
 
-    def add_task(self, message, frequency, group_id):
-        self.tasks.append(Task(message, frequency, group_id))
+    def add_task(self, message, frequency, group_id, filt, periods):
+        self.tasks.append(Task(message, frequency, group_id, filt, periods))
 
 class Task:
 
-    def __init__(self, message, frequency, group_id):
+    def __init__(self, message, frequency, group_id, filt, periods):
         global task_num
         task_num += 1
         self.lock = Lock()
         self.message = message
         self.frequency = frequency
         self.group_id = group_id
+        self.filt = filt
+        self.periods = periods
         self.set_new_reminder()
 
     def set_new_reminder(self):
@@ -100,13 +104,13 @@ def set_daily_reminders(context):
     for task in tasks:
         task.set_today_reminder()
 
-def add_to_group(message, frequency, group_id) -> None:
+def add_to_group(message, frequency, group_id, filt, periods) -> None:
     for group in groups:
         if group_id == group.group_id:
-            group.add_task(message, frequency, group_id)
+            group.add_task(message, frequency, group_id, filt, periods)
             bot.send_message(group_id, "Task set!")
             return
-    groups.append(Group(message, frequency, group_id))
+    groups.append(Group(message, frequency, group_id, filt, periods))
     bot.send_message(group_id, "Task set!")
 
 # Define a few command handlers. These usually take the two arguments update and
@@ -126,14 +130,20 @@ def help_command(update: Update, context: CallbackContext) -> None:
 def set_reminder_command(update: Update, context: CallbackContext) -> None:
     """Set reminders."""
     text = update.message.text
-    match = re.search("^/remind \"(?P<message>.+)\" (?P<frequency>\d+)$", text)
+    match = re.search("^/remind \"(?P<message>.+)\" (?P<frequency>\d+)(( (?P<filter>[ei]) (?P<periods>[\d]{1,2}(:[\d]{2})?~[\d]{1,2}(:[\d]{2})?)(,[\d]{1,2}(:[\d]{2})?~[\d]{1,2}(:[\d]{2})?)*))?$", text)
     if not match:
         update.message.reply_text(HELP_MESSAGE_REMIND)
     else:
         message = match.group('message')
         frequency = match.group('frequency')
         group_id = update.message.chat.id
-        add_to_group(message, frequency, group_id)
+        try:
+            filt = match.group('filt')
+            periods = match.group('periods')
+        except:
+            filt = None
+            periods = None
+        add_to_group(message, frequency, group_id, filt, periods)
 
 def list_command(update: Update, context: CallbackContext) -> None:
     """List reminders."""
@@ -171,7 +181,7 @@ def main() -> None:
     global job_queue
 
     # Create the Updater and pass it your bot's token.
-    updater = Updater("YOUT_TOKEN")
+    updater = Updater("YOUR_TOKEN")
     bot = updater.bot
     job_queue = updater.job_queue
     job_queue.run_daily(set_daily_reminders, datetime.time(0, 0, 0))
