@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 groups = []
 cur_group = 0
 
-MAX_TASK = 100
-MAX_NOTIFY = 100
+MAX_TASK = 128
+MAX_NOTIFY = 128
 MINUTES_PER_DAY = 24 * 60
 HELP_MESSAGE_REMIND = '''
 command: /remind "MESSAGE" FREQUENCY [i/e TIME~TIME[,TIME~TIME]*]
@@ -99,7 +99,7 @@ class Task:
 
     def set_today_reminder(self):
         self.lock.acquire()
-        for i in range(self.frequency):
+        for i in range(int(self.frequency)):
             timing = randrange(MINUTES_PER_DAY)
             job_queue.run_once(self.notify, timing * 60)
         self.frequency_today = self.frequency
@@ -173,6 +173,8 @@ def list_command(update: Update, context: CallbackContext) -> None:
                     if i == group.task_num:
                         break
                     i += 1
+            if len(message) == 0:
+                break
             bot.send_message(group.group_id, message)
             return
     bot.send_message(group_id, "No reminder!")
