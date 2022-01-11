@@ -54,6 +54,7 @@ INDEX: index of reminder to delete
 class Group:
 
     def __init__(self, message, frequency, group_id, filt, periods):
+        self.task_num = 1
         self.tasks = []
         self.group_id = group_id
         self.tasks.append(Task(0, message, frequency, group_id, filt, periods))
@@ -61,10 +62,12 @@ class Group:
     def add_task(self, message, frequency, group_id, filt, periods):
         for i, slot in enumerate(self.tasks):
             if slot == None:
+                self.task_num += 1
                 self.tasks[i] = Task(i, message, frequency, group_id, filt, periods)
                 return True
         if len(self.tasks) == MAX_TASK:
             return False
+        self.task_num += 1
         self.tasks.append(Task(i + 1, message, frequency, group_id, filt, periods))
         return True
 
@@ -163,16 +166,21 @@ def list_command(update: Update, context: CallbackContext) -> None:
     for group in groups:
         if group_id == group.group_id:
             message = ""
-            for i, task in enumerate(group.tasks):
-                message += "{}. 每日關心{}({}/{})\n".format(i + 1, re.sub(r'\s+@', '@', task.message), task.frequency_executed, task.frequency_today)
-            bot.send_message(task.group_id, message)
+            i = 1
+            for task in group.tasks:
+                if task != None:
+                    message += "{}. 每日關心{}({}/{})\n".format(i, re.sub(r'\s+@', '@', task.message), task.frequency_executed, task.frequency_today)
+                    if i == group.task_num:
+                        break
+                    i += 1
+            bot.send_message(group.group_id, message)
             return
     bot.send_message(group_id, "No reminder!")
 
 def delete_command(update: Update, context: CallbackContext) -> None:
     """Delete reminders."""
     text = update.message.text
-    match = re.search("^/delete (?P<index>\d+)$", text)
+    match = re.search("^/delete\s+(?P<index>\d+)$", text)
     if not match:
         update.message.reply_text(HELP_MESSAGE_DELETE)
         return
@@ -180,10 +188,17 @@ def delete_command(update: Update, context: CallbackContext) -> None:
     index = int(match.group('index'))
     for group in groups:
         if group_id == group.group_id:
-            if index > len(group.tasks):
+            if index > group.task_num:
                 update.message.reply_text("index out of range")
                 return
-            group.tasks[index - 1] = None
+            i = 0
+            for j, task in enumerate(group.tasks):
+                if task != None:
+                    i += 1
+                    if i == index:
+                        group.tasks[j] = None
+                        group.task_num -= 1
+                        # TODO: remove notifies of the task
             update.message.reply_text("task deleted")
 
 
