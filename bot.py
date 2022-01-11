@@ -142,7 +142,7 @@ def list_command(update: Update, context: CallbackContext) -> None:
         if group_id == group.group_id:
             message = ""
             for i, task in enumerate(group.tasks):
-                message += "{}. 每日關心{}({}/{})\n".format(i + 1, task.message, task.frequency_executed, task.frequency_today)
+                message += "{}. 每日關心{}({}/{})\n".format(i + 1, task.message.replace(" @", "@"), task.frequency_executed, task.frequency_today)
             bot.send_message(task.group_id, message)
             return
     bot.send_message(group_id, "No reminder!")
