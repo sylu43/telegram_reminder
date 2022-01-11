@@ -100,6 +100,15 @@ def set_daily_reminders(context):
     for task in tasks:
         task.set_today_reminder()
 
+def add_to_group(message, frequency, group_id) -> None:
+    for group in groups:
+        if group_id == group.group_id:
+            group.add_task(message, frequency, group_id)
+            bot.send_message(group_id, "Task set!")
+            return
+    groups.append(Group(message, frequency, group_id))
+    bot.send_message(group_id, "Task set!")
+
 # Define a few command handlers. These usually take the two arguments update and
 # context.
 def start(update: Update, context: CallbackContext) -> None:
@@ -124,13 +133,7 @@ def set_reminder_command(update: Update, context: CallbackContext) -> None:
         message = match.group('message')
         frequency = match.group('frequency')
         group_id = update.message.chat.id
-        for group in groups:
-            if group_id == group.group_id:
-                group.add_task(message, frequency, group_id)
-                bot.send_message(group_id, "Task set!")
-                return
-        groups.append(Group(message, frequency, group_id))
-        bot.send_message(group_id, "Task set!")
+        add_to_group(message, frequency, group_id)
 
 def list_command(update: Update, context: CallbackContext) -> None:
     """List reminders."""
@@ -168,7 +171,7 @@ def main() -> None:
     global job_queue
 
     # Create the Updater and pass it your bot's token.
-    updater = Updater("YOUR_TOKEN")
+    updater = Updater("YOUT_TOKEN")
     bot = updater.bot
     job_queue = updater.job_queue
     job_queue.run_daily(set_daily_reminders, datetime.time(0, 0, 0))
