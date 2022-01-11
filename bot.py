@@ -142,7 +142,7 @@ def help_command(update: Update, context: CallbackContext) -> None:
 def set_reminder_command(update: Update, context: CallbackContext) -> None:
     """Set reminders."""
     text = update.message.text
-    match = re.search("^/remind \"(?P<message>.+)\" (?P<frequency>\d+)(( (?P<filter>[ei]) (?P<periods>[\d]{1,2}(:[\d]{2})?~[\d]{1,2}(:[\d]{2})?)(,[\d]{1,2}(:[\d]{2})?~[\d]{1,2}(:[\d]{2})?)*))?$", text)
+    match = re.search("^/remind\s+\"(?P<message>.+)\"\s+(?P<frequency>\d+)((\s+(?P<filter>[ei])\s+(?P<periods>[\d]{1,2}(:[\d]{2})?~[\d]{1,2}(:[\d]{2})?)(,[\d]{1,2}(:[\d]{2})?~[\d]{1,2}(:[\d]{2})?)*))?$", text)
     if not match:
         update.message.reply_text(HELP_MESSAGE_REMIND)
     else:
