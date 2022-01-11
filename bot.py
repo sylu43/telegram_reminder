@@ -38,13 +38,13 @@ groups = []
 task_num = 0
 MINUTES_PER_DAY = 24 * 60
 HELP_MESSAGE_REMIND = '''
-command: /remind "$message" $frequency
-message: message to remind
-frequency: how many time bot should work per day
+command: /remind "MESSAGE" FREQUENCY
+MESSAGE: message to remind
+FREQUENCY: how many time bot should work per day
 '''
 HELP_MESSAGE_DELETE = '''
-command: /delete $index
-index: index of reminder to delete
+command: /delete INDEX
+INDEX: index of reminder to delete
 '''
 
 class Group:
