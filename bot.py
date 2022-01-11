@@ -101,8 +101,9 @@ class Task:
         self.lock.release()
 
 def set_daily_reminders(context):
-    for task in tasks:
-        task.set_today_reminder()
+    for group in groups:
+        for task in group.tasks:
+            task.set_today_reminder()
 
 def add_to_group(message, frequency, group_id, filt, periods) -> None:
     for group in groups:
