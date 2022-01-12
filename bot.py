@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 groups = []
 cur_group = 0
 
-MAX_TASK = 128
-MAX_NOTIFY = 128
+MAX_TASK = 100
+MAX_NOTIFY = 100
 MINUTES_PER_DAY = 24 * 60
 HELP_MESSAGE_REMIND = '''
 command: /remind "MESSAGE" FREQUENCY [i/e TIME~TIME[,TIME~TIME]*]
@@ -104,6 +104,7 @@ class Task:
             job_queue.run_once(self.notify, timing * 60)
         self.frequency_today = self.frequency
         self.frequency_executed = 0
+        self.lock.release()
 
     def notify(self, context):
         self.lock.acquire()
@@ -200,7 +201,6 @@ def delete_command(update: Update, context: CallbackContext) -> None:
                     if i == index:
                         group.tasks[j] = None
                         group.task_num -= 1
-                        # TODO: remove notifies of the task
             update.message.reply_text("task deleted")
 
 
@@ -213,7 +213,7 @@ def main() -> None:
     updater = Updater("YOUR_TOKEN")
     bot = updater.bot
     job_queue = updater.job_queue
-    job_queue.run_daily(set_daily_reminders, datetime.time(0, 0, 0))
+    job_queue.run_daily(set_daily_reminders, datetime.time(16, 0, 0))
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
