@@ -24,7 +24,7 @@ import datetime
 from threading import Lock
 from random import randrange
 from telegram import Update, ForceReply
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, Filters
 
 # Enable logging
 logging.basicConfig(
@@ -202,6 +202,11 @@ def delete_command(update: Update, context: CallbackContext) -> None:
                         group.tasks[j] = None
                         group.task_num -= 1
             update.message.reply_text("task deleted")
+def bonk(update: Update, context: CallbackContext) -> None:
+    """Echo the user message."""
+    if "不要" in update.message.text:
+        update.message.reply_sticker("CAACAgUAAx0CacyfrAACAxdh6AHKQ_9ITQ6HW9uVkT9uf2NZygAC5gIAArDPuVV6z6He8xoIDCME")
+
 
 
 def main() -> None:
@@ -225,6 +230,8 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler("list", list_command))
     dispatcher.add_handler(CommandHandler("delete", delete_command))
 
+    # on non command i.e message - echo the message on Telegram
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, bonk))
     # Start the Bot
     updater.start_polling()
 
